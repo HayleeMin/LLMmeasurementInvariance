@@ -1,0 +1,50 @@
+# Pilot configuration. Everything here is part of the pre-pilot lock: post this file on OSF
+# (time-stamped) BEFORE running any script on pilot data. Model commit hashes pinned 2026-10-14.
+
+seed: 20261014
+
+models:
+  # name: Hugging Face repo id; revision: commit hash pinned at download (fill in)
+  - name: bert-base-uncased          # bidirectional encoder; benchmark reference (Laicher et al., 2021)
+    revision: "86b5e0934494bd15c9632b12f734a8a67f723594"   # main as of 2026-10-14 (last modified 2024-02-19)
+  - name: roberta-large              # bidirectional encoder (repo: FacebookAI/roberta-large)
+    revision: "722cf37b1afa9454edce342e7895e588b6ff1d59"   # main as of 2026-10-14 (last modified 2024-02-19)
+  - name: Qwen/Qwen3-Embedding-0.6B  # embedding model built on a large language model
+    revision: "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"   # main as of 2026-10-14 (last modified 2026-04-20)
+
+embedding:
+  max_length: 256           # subword tokens per input (sentence + 1 context sentence)
+  batch_size: 32
+  centering_tokens: 100000  # random tokens used for the anisotropy-correction mean vector
+  layers: all               # evaluate every layer; plus "last4" (mean of last four) as robustness
+
+gate1_semeval:
+  data_dir: data/semeval2020_ulscd_eng   # unzip the official English release here
+  max_usages_per_period: 200             # per target, sampled at random
+  min_spearman: 0.40                     # LOCKED THRESHOLD (see lock document for rationale)
+
+gate2_classification:
+  k_folds: 5
+  min_macro_f1: 0.70        # LOCKED THRESHOLD (same as control C3)
+  max_ece: 0.05             # LOCKED THRESHOLD (expected calibration error, 10 bins, top label)
+
+pilot_corpus:
+  source: hackernews_algolia   # or "csv" (columns: id, date, author, thread, text)
+  csv_path: null
+  years: [2012, 2022]
+  burnout_regex: "\\b(burn[- ]?out|burned out|burnt out)\\b"
+  coding_sample_size: 400      # usages sent to both coders, year-stratified
+  coding_min_per_year: 20
+
+control_screen:
+  lexicon: [remote, wfh, zoom, virtual, pandemic, covid, hybrid, home]
+  min_ratio: 2.0               # co-occurrence at least doubles 2019 -> 2021 ...
+  min_rise_points: 1.0         # ... and rises by at least 1 percentage point -> excluded
+  usages_per_term_year: 1000   # maximum sampled per term per year (2019, 2021)
+  frequency_band_log10: 1.0    # keep terms within +/-1 log10 of burnout's pilot frequency
+  min_usages_per_year: 30      # pilot-corpus minimum per year for a control term
+  min_final: null              # [minimum TBD]: if fewer terms remain, band widens to +/-1.5
+
+coding:
+  categories: [exhaustion, cynicism, reduced_efficacy, depressive_symptoms, ordinary_tiredness, other_none]
+  min_alpha: 0.667
